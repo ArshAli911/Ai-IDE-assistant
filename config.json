@@ -1,0 +1,13 @@
+{
+    "aiTarget": "gemini",
+    "requestDelay": 1500,
+    "responseTimeout": 60000,
+    "maxRetries": 3,
+    "streamStableMs": 1500,
+    "crawlMaxPages": 5,
+    "crawlTimeoutMs": 10000,
+    "crawlMaxCharsPerPage": 5000,
+    "serverPort": 3131,
+    "headless": false,
+    "notepad": "You can switch aiTarget between 'gemini' and 'chatgpt'."
+}

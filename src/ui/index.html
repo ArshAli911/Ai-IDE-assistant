@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI IDE Assistant</title>
+
+  <!-- Prism.js for syntax highlighting in chat output -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" />
+
+  <!-- Our styles -->
+  <link rel="stylesheet" href="styles.css" />
+
+  <!-- Content Security Policy (allow local + CDN) -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self';
+             script-src 'self' https://cdnjs.cloudflare.com 'unsafe-inline';
+             style-src 'self' https://fonts.googleapis.com https://cdnjs.cloudflare.com 'unsafe-inline';
+             font-src https://fonts.gstatic.com;
+             connect-src http://127.0.0.1:3131;
+             img-src 'self' data:;" />
+</head>
+
+<body>
+  <div id="app">
+
+    <!-- ── Title Bar ── -->
+    <div id="titlebar">
+      <div class="title-logo">
+        <div class="logo-icon">⚡</div>
+        AI IDE Assistant
+      </div>
+      <div class="window-controls">
+        <button class="wc-btn" id="wc-min" title="Minimize">&#9472;</button>
+        <button class="wc-btn" id="wc-max" title="Maximize">&#9723;</button>
+        <button class="wc-btn" id="wc-close" title="Close">&#10005;</button>
+      </div>
+    </div>
+
+    <!-- ── Workspace ── -->
+    <div id="workspace">
+
+      <!-- Activity Bar -->
+      <div id="activity-bar">
+        <button class="ab-btn active" id="ab-chat" title="Chat" data-panel="chat">💬</button>
+        <button class="ab-btn" id="ab-explorer" title="File Explorer" data-panel="explorer">📁</button>
+        <button class="ab-btn" id="ab-terminal" title="Terminal" data-panel="terminal">🖥️</button>
+        <div class="ab-spacer"></div>
+        <button class="ab-btn" id="ab-settings" title="Settings">⚙️</button>
+      </div>
+
+      <!-- Sidebar -->
+      <div id="sidebar">
+
+        <!-- ── Chat History Panel ── -->
+        <div id="panel-chat">
+          <div class="sidebar-header">
+            Chat History
+            <button id="clear-history-btn" title="Clear History">🗑</button>
+          </div>
+          <div id="history-list">
+            <div class="tree-empty">No conversation history yet.<br />Send a prompt to get started.</div>
+          </div>
+        </div>
+
+        <!-- ── File Explorer Panel (hidden by default) ── -->
+        <div id="panel-explorer" class="hidden">
+          <div class="sidebar-header">
+            Explorer
+            <div class="sidebar-header-actions">
+              <button id="this-pc-btn" title="Browse local folders in the app">💻</button>
+              <button id="open-folder-btn" title="Open Folder">📂</button>
+            </div>
+          </div>
+          <div id="explorer-toolbar">
+            <button class="exp-tool-btn" id="new-file-btn" title="New File">📄 File</button>
+            <button class="exp-tool-btn" id="new-folder-btn" title="New Folder">📁 Folder</button>
+          </div>
+          <div id="file-tree">
+            <div class="tree-empty">No folder open.<br />Click 📂 to open a folder.</div>
+          </div>
+        </div>
+
+      </div><!-- /sidebar -->
+
+      <!-- Main Content + Terminal wrapper -->
+      <div id="main-and-terminal">
+
+        <!-- Main Content Area -->
+        <div id="content-area">
+
+          <!-- ── Chat Panel (center) ── -->
+          <div id="chat-panel">
+            <div id="chat-output">
+              <!-- Welcome message -->
+              <div class="chat-message">
+                <div class="msg-header">
+                  <div class="msg-avatar assistant">🤖</div>
+                  <span class="msg-role assistant">Assistant</span>
+                </div>
+                <div class="msg-body assistant">
+                  <p>👋 Welcome to <strong>AI IDE Assistant</strong>!</p>
+                  <p>I use browser automation to talk to Gemini or ChatGPT on your behalf — no API key needed.</p>
+                  <p><strong>Getting started:</strong></p>
+                  <ul>
+                    <li>A browser window will open when you send your first prompt</li>
+                    <li>Log into Gemini (or ChatGPT) in that window — session is saved for future launches</li>
+                    <li>Use the 📁 Explorer to open and edit project files</li>
+                    <li>Use the 🖥️ Terminal to run commands in your project</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div id="typing-indicator">
+              <div class="typing-dots"><span></span><span></span><span></span></div>
+              Waiting for AI response…
+            </div>
+
+            <div id="chat-input-area">
+              <div id="input-wrapper">
+                <button id="crawl-btn" title="Crawl a website into the editor">Crawl</button>
+                <textarea id="prompt-input" rows="1"
+                  placeholder="Ask anything… (Shift+Enter for new line, Enter to send)"></textarea>
+                <button id="send-btn" title="Send (Enter)">➤</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Editor Panel (right) ── -->
+          <div id="editor-panel">
+
+            <div id="editor-tab-bar">
+              <!-- Tabs injected by renderer.js -->
+              <div id="editor-tab-new" title="New scratch file">＋</div>
+            </div>
+
+            <div id="editor-toolbar">
+              <button class="ed-btn primary" id="fix-code-btn">🔧 Fix Code</button>
+              <button class="ed-btn" id="explain-btn">💡 Explain</button>
+              <button class="ed-btn" id="save-file-btn">💾 Save</button>
+              <span id="editor-active-file" class="text-muted">scratch</span>
+            </div>
+
+            <textarea id="editor-textarea" spellcheck="false" placeholder="// Paste or open a file to edit code here...
+// Use the buttons above to send code to AI."></textarea>
+
+            <div id="editor-lint" class="text-muted">Ln 1, Col 1 &nbsp;|&nbsp; UTF-8</div>
+          </div>
+
+        </div><!-- /content-area -->
+
+        <!-- ── Terminal Panel (bottom, collapsible) ── -->
+        <div id="terminal-panel" class="hidden">
+          <div id="terminal-resize-handle" title="Drag to resize"></div>
+          <div id="terminal-header">
+            <div id="terminal-tab-bar">
+              <!-- tabs injected by renderer.js -->
+            </div>
+            <button id="terminal-new-btn" title="New Terminal">＋</button>
+            <button id="terminal-close-btn" title="Hide Terminal">✕</button>
+          </div>
+          <div id="terminal-output"></div>
+          <div id="terminal-input-row">
+            <span id="terminal-prompt">❯</span>
+            <input id="terminal-input" type="text" autocomplete="off" spellcheck="false"
+              placeholder="Type a command and press Enter…" />
+            <button id="terminal-send-btn" title="Send">↵</button>
+          </div>
+        </div>
+
+      </div><!-- /main-and-terminal -->
+
+    </div><!-- /workspace -->
+
+    <!-- ── Status Bar ── -->
+    <div id="status-bar">
+      <div class="sb-item clickable" id="sb-target" title="Click to switch AI target">🤖 <span
+          id="sb-target-label">gemini</span></div>
+      <div class="sb-item" id="sb-cache">⚡ Cache</div>
+      <div class="sb-item" id="sb-folder" title="No folder open">📁 No folder</div>
+      <div class="sb-item" id="sb-status">
+        <div id="sb-spinner"></div>
+        <span id="sb-status-text">Ready</span>
+      </div>
+    </div>
+
+  </div><!-- /app -->
+
+  <!-- ── Context Menu ── -->
+  <div id="context-menu">
+    <div class="ctx-item" data-action="open">📄 Open</div>
+    <div class="ctx-item" data-action="rename">✏️ Rename</div>
+    <div class="ctx-item" data-action="new-file">📄 New File Here</div>
+    <div class="ctx-item" data-action="new-folder">📁 New Folder Here</div>
+    <div class="ctx-separator"></div>
+    <div class="ctx-item" data-action="reveal">📂 Reveal in Explorer</div>
+    <div class="ctx-separator"></div>
+    <div class="ctx-item danger" data-action="delete">🗑 Delete</div>
+  </div>
+
+  <!-- ── Modal ── -->
+  <div id="modal-overlay">
+    <div id="modal-box">
+      <h3 id="modal-title">Enter name</h3>
+      <input id="modal-input" type="text" autocomplete="off" spellcheck="false" />
+      <div id="modal-actions">
+        <button class="modal-btn cancel" id="modal-cancel">Cancel</button>
+        <button class="modal-btn confirm" id="modal-confirm">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Prism.js for syntax highlighting -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+
+  <!-- Main renderer -->
+  <script src="renderer.js"></script>
+</body>
+
+</html>
